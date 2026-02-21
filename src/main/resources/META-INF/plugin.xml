@@ -28,9 +28,31 @@
     <depends>com.intellij.modules.platform</depends>
 
     <resource-bundle>messages.ChatificialBundle</resource-bundle>
+
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="MyToolWindow"
-                    factoryClass="io.github.chatificial.MyToolWindowFactory"
-                    icon="AllIcons.Toolwindows.ToolWindowPalette"/>
+        <notificationGroup
+                id="chatificial.notification"
+                key="notificationGroup.chatificial.displayName"
+                displayType="BALLOON"
+        />
+        <applicationConfigurable
+                id="chatificial.settings"
+                key="settings.chatificial.displayName"
+                instance="io.github.chatificial.settings.ChatificialSettingsConfigurable"
+        />
     </extensions>
+
+    <actions>
+        <group
+                id="chatificial.projectViewPopupMenu"
+                popup="true"
+                icon="/icons/chatificial.svg"
+        >
+            <add-to-group group-id="ProjectViewPopupMenu"/>
+            <action
+                    id="chatificial.copyFileContent"
+                    class="io.github.chatificial.actions.CopyFileContentAction"
+            />
+        </group>
+    </actions>
 </idea-plugin>
