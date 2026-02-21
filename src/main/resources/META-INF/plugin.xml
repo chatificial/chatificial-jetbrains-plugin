@@ -22,7 +22,9 @@
     <vendor url="https://github.com/chatificial">Chatificial</vendor>
 
     <description><![CDATA[
-        The bridge 🌉 between people 🧑‍💻 and AI 🤖
+        The bridge between people and AI.
+
+        Built for developers who collaborate with AI — not delegate to it.
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
