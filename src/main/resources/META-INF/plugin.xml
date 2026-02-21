@@ -22,7 +22,7 @@
     <vendor url="https://github.com/chatificial">Chatificial</vendor>
 
     <description><![CDATA[
-        TODO: Add description (minimum length of 40)
+        The bridge 🌉 between people 🧑‍💻 and AI 🤖
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
