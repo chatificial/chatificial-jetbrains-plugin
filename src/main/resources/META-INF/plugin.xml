@@ -14,30 +14,20 @@
   ~ limitations under the License.
   -->
 
-<!-- Plugin Configuration File: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <!-- Unique identifier of the plugin. It should be FQN, cannot be changed between the plugin versions. -->
     <id>io.github.chatificial</id>
 
-    <!-- Public plugin name should be written in Title Case.
-         Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-name -->
     <name>Chatificial</name>
 
-    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
     <vendor>TODO: Add vendor</vendor>
 
-    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
-         Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
     <description><![CDATA[
         TODO: Add description (minimum length of 40)
     ]]></description>
 
-    <!-- Product and plugin compatibility requirements.
-         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
 
     <resource-bundle>messages.ChatificialBundle</resource-bundle>
-    <!-- Extensions defined by the plugin.
-         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="MyToolWindow"
                     factoryClass="io.github.chatificial.MyToolWindowFactory"
