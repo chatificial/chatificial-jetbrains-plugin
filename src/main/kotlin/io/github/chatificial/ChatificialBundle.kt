@@ -21,10 +21,10 @@ import org.jetbrains.annotations.Nls
 import org.jetbrains.annotations.PropertyKey
 import java.util.function.Supplier
 
-private const val BUNDLE = "messages.MyMessageBundle"
+private const val BUNDLE = "messages.ChatificialBundle"
 
-internal object MyMessageBundle {
-    private val instance = DynamicBundle(MyMessageBundle::class.java, BUNDLE)
+internal object ChatificialBundle {
+    private val instance = DynamicBundle(ChatificialBundle::class.java, BUNDLE)
 
     @JvmStatic
     fun message(key: @PropertyKey(resourceBundle = BUNDLE) String, vararg params: Any?): @Nls String {
