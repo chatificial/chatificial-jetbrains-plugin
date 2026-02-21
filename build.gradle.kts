@@ -40,12 +40,16 @@ dependencies {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "252.25557"
+            sinceBuild = "223"
         }
 
         changeNotes = """
             Initial version
         """.trimIndent()
+    }
+    publishing {
+        channels = listOf("eap")
+        token = providers.gradleProperty("intellijPlatformPublishingToken")
     }
 }
 
