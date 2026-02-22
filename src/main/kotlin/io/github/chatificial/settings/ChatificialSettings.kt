@@ -34,12 +34,16 @@ class ChatificialSettings : PersistentStateComponent<ChatificialSettings.State> 
         var fileTemplate: String = DEFAULT_TEMPLATE
     )
 
-    private var state = State()
+    private var myState: State = State()
 
-    override fun getState(): State = state
+    override fun getState(): State = myState
 
     override fun loadState(state: State) {
-        this.state = state.normalized()
+        myState = state.normalized()
+    }
+
+    fun setState(newState: State) {
+        myState = newState.normalized()
     }
 
     companion object {
@@ -59,5 +63,16 @@ class ChatificialSettings : PersistentStateComponent<ChatificialSettings.State> 
 private fun ChatificialSettings.State.normalized(): ChatificialSettings.State =
     copy(
         maxTotalChars = maxTotalChars.coerceAtLeast(1),
-        fileTemplate = fileTemplate.ifBlank { ChatificialSettings.DEFAULT_TEMPLATE }
+        fileTemplate = fileTemplate
+            .ifBlank { ChatificialSettings.DEFAULT_TEMPLATE }
+            .validatedTemplate()
     )
+
+private const val TEMPLATE_PATH = "{path}"
+private const val TEMPLATE_CONTENT = "{content}"
+
+private fun String.validatedTemplate(): String {
+    val tpl = ifBlank { ChatificialSettings.DEFAULT_TEMPLATE }
+    return if (tpl.contains(TEMPLATE_PATH) && tpl.contains(TEMPLATE_CONTENT)) tpl
+    else ChatificialSettings.DEFAULT_TEMPLATE
+}

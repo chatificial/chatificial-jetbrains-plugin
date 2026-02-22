@@ -16,73 +16,113 @@
 
 package io.github.chatificial.settings
 
-import com.intellij.openapi.options.Configurable
-import com.intellij.ui.dsl.builder.*
+import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.observable.properties.GraphProperty
+import com.intellij.openapi.observable.properties.PropertyGraph
+import com.intellij.openapi.options.BoundConfigurable
+import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.Row
+import com.intellij.ui.dsl.builder.actionButton
+import com.intellij.ui.dsl.builder.bindIntText
+import com.intellij.ui.dsl.builder.bindText
+import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.rows
 import io.github.chatificial.ChatificialBundle
 import javax.swing.JComponent
 
-class ChatificialSettingsConfigurable : Configurable {
+class ChatificialSettingsConfigurable : BoundConfigurable(
+    ChatificialBundle.message("settings.chatificial.displayName")
+) {
 
     private val settings = ChatificialSettings.getInstance()
-    private var snapshot = settings.state.copy()
-    private var component: JComponent? = null
 
-    override fun getDisplayName(): String =
-        ChatificialBundle.message("settings.chatificial.displayName")
+    private val graph = PropertyGraph()
 
-    override fun createComponent(): JComponent {
-        component = panel {
-            group(ChatificialBundle.message("settings.copyFileContent.group")) {
-                row(ChatificialBundle.message("settings.copyFileContent.maxTotalChars")) {
-                    intTextField()
-                        .bindIntText(
-                            getter = { snapshot.maxTotalChars },
-                            setter = { snapshot.maxTotalChars = it }
-                        )
-                        .comment(ChatificialBundle.message("settings.copyFileContent.maxTotalChars.comment"))
-                }
+    private val maxTotalCharsDefault = 20_000
+    private val fileTemplateDefault = ChatificialSettings.DEFAULT_TEMPLATE
 
-                row(ChatificialBundle.message("settings.copyFileContent.template")) {
-                    textArea()
-                        .bindText(
-                            getter = { snapshot.fileTemplate },
-                            setter = { snapshot.fileTemplate = it }
-                        )
-                        .rows(10)
-                        .align(AlignX.FILL)
-                        .comment(ChatificialBundle.message("settings.copyFileContent.template.comment"))
-                }.resizableRow()
+    private val maxTotalChars = graph.property(maxTotalCharsDefault)
+    private val fileTemplate = graph.property(fileTemplateDefault)
+
+    override fun createPanel() = panel {
+        group(ChatificialBundle.message("settings.copyFileContent.group")) {
+
+            row(ChatificialBundle.message("settings.copyFileContent.maxTotalChars")) {
+                intTextField()
+                    .bindIntText(maxTotalChars)
+                    .comment(ChatificialBundle.message("settings.copyFileContent.maxTotalChars.comment"))
+
+                resetSettingButton(
+                    property = maxTotalChars,
+                    defaultValue = maxTotalCharsDefault
+                )
             }
+
+            row(ChatificialBundle.message("settings.copyFileContent.template")) {
+                textArea()
+                    .bindText(fileTemplate)
+                    .rows(10)
+                    .align(AlignX.FILL)
+                    .comment(ChatificialBundle.message("settings.copyFileContent.template.comment"))
+
+                resetSettingButton(
+                    property = fileTemplate,
+                    defaultValue = fileTemplateDefault
+                )
+            }.resizableRow()
         }
-        return component!!
     }
 
-    override fun isModified(): Boolean = snapshot != settings.state
-
-    override fun apply() {
-        settings.loadState(
-            settings.state.copy(
-                maxTotalChars = snapshot.maxTotalChars.coerceAtLeast(1),
-                fileTemplate = snapshot.fileTemplate.validatedTemplate()
-            )
-        )
-        snapshot = settings.state.copy()
+    override fun isModified(): Boolean {
+        val s = settings.state
+        return maxTotalChars.get() != s.maxTotalChars || fileTemplate.get() != s.fileTemplate
     }
 
     override fun reset() {
-        snapshot = settings.state.copy()
+        val s = settings.state
+        maxTotalChars.set(s.maxTotalChars)
+        fileTemplate.set(s.fileTemplate)
     }
 
-    override fun disposeUIResources() {
-        component = null
+    override fun apply() {
+        super.apply()
+
+        settings.setState(
+            settings.state.copy(
+                maxTotalChars = maxTotalChars.get(),
+                fileTemplate = fileTemplate.get()
+            )
+        )
     }
 }
 
-private const val TEMPLATE_PATH = "{path}"
-private const val TEMPLATE_CONTENT = "{content}"
+fun <T> Row.resetSettingButton(
+    property: GraphProperty<T>,
+    defaultValue: T
+) {
+    lateinit var buttonComponent: JComponent
 
-private fun String.validatedTemplate(): String {
-    val tpl = ifBlank { ChatificialSettings.DEFAULT_TEMPLATE }
-    return if (tpl.contains(TEMPLATE_PATH) && tpl.contains(TEMPLATE_CONTENT)) tpl
-    else ChatificialSettings.DEFAULT_TEMPLATE
+    val action = object : DumbAwareAction(
+        ChatificialBundle.message("settings.common.reset"),
+        ChatificialBundle.message("settings.common.reset.description"),
+        AllIcons.Diff.Revert
+    ) {
+        override fun actionPerformed(e: AnActionEvent) {
+            property.set(defaultValue)
+            buttonComponent.isVisible = false
+        }
+    }
+
+    buttonComponent = actionButton(action).component.apply {
+        toolTipText = ChatificialBundle.message("settings.common.reset.tooltip")
+    }
+
+    fun updateVisibility() {
+        buttonComponent.isVisible = property.get() != defaultValue
+    }
+
+    updateVisibility()
+    property.afterChange { updateVisibility() }
 }
