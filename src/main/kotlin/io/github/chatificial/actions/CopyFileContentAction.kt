@@ -81,7 +81,7 @@ class CopyFileContentAction : AnAction() {
                 }
             }
         }
-            .finishOnUiThread(ModalityState.defaultModalityState()) { outputOrNull ->
+            .finishOnUiThread(ModalityState.nonModal()) { outputOrNull ->
                 if (project.isDisposed) return@finishOnUiThread
 
                 if (outputOrNull == null) {
@@ -94,7 +94,8 @@ class CopyFileContentAction : AnAction() {
 
                 if (outputOrNull.length > maxTotalChars) {
                     val scratchVFile = writeToScratchFileInWriteAction(outputOrNull)
-                    FileEditorManager.getInstance(project).openFile(scratchVFile, true, true)
+
+                    openFileLaterWriteSafe(project, scratchVFile)
 
                     NotificationType.INFORMATION.notify(
                         project,
@@ -113,6 +114,19 @@ class CopyFileContentAction : AnAction() {
                 }
             }
             .submit(AppExecutorUtil.getAppExecutorService())
+    }
+
+    private fun openFileLaterWriteSafe(project: Project, file: VirtualFile) {
+        if (project.isDisposed || !file.isValid) return
+
+        val app = ApplicationManager.getApplication()
+        app.invokeLater(
+            {
+                if (project.isDisposed || !file.isValid) return@invokeLater
+                FileEditorManager.getInstance(project).openFile(file, true, true)
+            },
+            ModalityState.nonModal()
+        )
     }
 
     private fun normalizeTemplate(templateFromSettings: String): String {
