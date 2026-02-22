@@ -17,7 +17,10 @@
 package io.github.chatificial.settings
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.*
+import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.State
+import com.intellij.openapi.components.Storage
 
 @Service(Service.Level.APP)
 @State(
@@ -46,8 +49,10 @@ class ChatificialSettings : PersistentStateComponent<ChatificialSettings.State> 
                     "{content}\n" +
                     "```"
 
+        @JvmStatic
         fun getInstance(): ChatificialSettings =
-            ApplicationManager.getApplication().service()
+            ApplicationManager.getApplication().getService(ChatificialSettings::class.java)
+                ?: error("ChatificialSettings service is not registered")
     }
 }
 
