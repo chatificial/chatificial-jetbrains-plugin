@@ -21,6 +21,7 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import io.github.chatificial.template.TemplatePlaceholders
 
 @Service(Service.Level.APP)
 @State(
@@ -48,9 +49,9 @@ class ChatificialSettings : PersistentStateComponent<ChatificialSettings.State> 
 
     companion object {
         const val DEFAULT_TEMPLATE: String =
-            "`{path}`\n" +
+            "`" + TemplatePlaceholders.PATH + "`\n" +
                     "```\n" +
-                    "{content}\n" +
+                    "" + TemplatePlaceholders.CONTENT + "\n" +
                     "```"
 
         @JvmStatic
@@ -68,11 +69,8 @@ private fun ChatificialSettings.State.normalized(): ChatificialSettings.State =
             .validatedTemplate()
     )
 
-private const val TEMPLATE_PATH = "{path}"
-private const val TEMPLATE_CONTENT = "{content}"
-
 private fun String.validatedTemplate(): String {
     val tpl = ifBlank { ChatificialSettings.DEFAULT_TEMPLATE }
-    return if (tpl.contains(TEMPLATE_PATH) && tpl.contains(TEMPLATE_CONTENT)) tpl
+    return if (tpl.contains(TemplatePlaceholders.PATH) && tpl.contains(TemplatePlaceholders.CONTENT)) tpl
     else ChatificialSettings.DEFAULT_TEMPLATE
 }

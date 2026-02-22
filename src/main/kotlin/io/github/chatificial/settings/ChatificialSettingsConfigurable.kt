@@ -30,6 +30,7 @@ import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.rows
 import io.github.chatificial.ChatificialBundle
+import io.github.chatificial.template.TemplatePlaceholders
 import javax.swing.JComponent
 
 class ChatificialSettingsConfigurable : BoundConfigurable(
@@ -65,7 +66,12 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
                     .bindText(fileTemplate)
                     .rows(10)
                     .align(AlignX.FILL)
-                    .comment(ChatificialBundle.message("settings.copyFileContent.template.comment"))
+                    .comment(
+                        ChatificialBundle.message(
+                            "settings.copyFileContent.template.comment",
+                            TemplatePlaceholders.ALL.joinToString(", ")
+                        )
+                    )
 
                 resetSettingButton(
                     property = fileTemplate,

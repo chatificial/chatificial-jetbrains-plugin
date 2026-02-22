@@ -39,15 +39,13 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.github.chatificial.ChatificialBundle
 import io.github.chatificial.settings.ChatificialSettings
+import io.github.chatificial.template.TemplatePlaceholders
 import java.awt.datatransfer.StringSelection
 
 class CopyFileContentAction : AnAction() {
 
     companion object {
         private const val NOTIFICATION_GROUP_ID = "chatificial.notification"
-
-        private const val TEMPLATE_PATH = "{path}"
-        private const val TEMPLATE_CONTENT = "{content}"
 
         private const val SCRATCH_FILE_NAME = "chatificial.content.md"
     }
@@ -66,7 +64,7 @@ class CopyFileContentAction : AnAction() {
 
         val settingsState = ChatificialSettings.getInstance().state
         val maxTotalChars = settingsState.maxTotalChars.coerceAtLeast(1)
-        val template = normalizeTemplate(settingsState.fileTemplate)
+        val template = settingsState.fileTemplate
 
         ReadAction.nonBlocking<String?> {
             if (project.isDisposed) return@nonBlocking null
@@ -129,12 +127,6 @@ class CopyFileContentAction : AnAction() {
         )
     }
 
-    private fun normalizeTemplate(templateFromSettings: String): String {
-        val tpl = templateFromSettings.ifBlank { ChatificialSettings.DEFAULT_TEMPLATE }
-        return if (tpl.contains(TEMPLATE_PATH) && tpl.contains(TEMPLATE_CONTENT)) tpl
-        else ChatificialSettings.DEFAULT_TEMPLATE
-    }
-
     private fun NotificationType.notify(project: Project, message: String) {
         NotificationGroupManager.getInstance()
             .getNotificationGroup(NOTIFICATION_GROUP_ID)
@@ -151,8 +143,8 @@ class CopyFileContentAction : AnAction() {
             if (contentOrPlaceholder.endsWith('\n')) contentOrPlaceholder else "$contentOrPlaceholder\n"
 
         return template
-            .replace(TEMPLATE_PATH, relPath)
-            .replace(TEMPLATE_CONTENT, normalizedContent)
+            .replace(TemplatePlaceholders.PATH, relPath)
+            .replace(TemplatePlaceholders.CONTENT, normalizedContent)
             .trimEnd()
     }
 
