@@ -78,10 +78,7 @@ class CopyFileContentAction : AnAction() {
                 }
             }
         }
-            .finishOnUiThread(
-                @Suppress("DEPRECATION") // 2022.3 compatibility
-                ModalityState.NON_MODAL
-            ) { outputOrNull ->
+            .finishOnUiThread(ModalityState.defaultModalityState()) { outputOrNull ->
                 if (project.isDisposed) return@finishOnUiThread
 
                 if (outputOrNull == null) {
@@ -129,8 +126,7 @@ class CopyFileContentAction : AnAction() {
                 if (project.isDisposed || !file.isValid) return@invokeLater
                 FileEditorManager.getInstance(project).openFile(file, true, true)
             },
-            @Suppress("DEPRECATION") // 2022.3 compatibility
-            ModalityState.NON_MODAL
+            ModalityState.defaultModalityState()
         )
     }
 
