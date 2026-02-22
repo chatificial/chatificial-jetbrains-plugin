@@ -17,6 +17,7 @@
 package io.github.chatificial.settings
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.observable.properties.GraphProperty
 import com.intellij.openapi.observable.properties.PropertyGraph
@@ -31,7 +32,11 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.rows
 import io.github.chatificial.ChatificialBundle
 import io.github.chatificial.template.TemplatePlaceholders
+import java.awt.EventQueue
 import javax.swing.JComponent
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
+import javax.swing.text.JTextComponent
 
 class ChatificialSettingsConfigurable : BoundConfigurable(
     ChatificialBundle.message("settings.chatificial.displayName")
@@ -51,19 +56,25 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
         group(ChatificialBundle.message("settings.copyFileContent.group")) {
 
             row(ChatificialBundle.message("settings.copyFileContent.maxTotalChars")) {
-                intTextField()
+                val fieldCell = intTextField()
                     .bindIntText(maxTotalChars)
                     .comment(ChatificialBundle.message("settings.copyFileContent.maxTotalChars.comment"))
 
                 resetSettingButton(
-                    graph = graph,
+                    textComponent = fieldCell.component,
                     property = maxTotalChars,
-                    defaultValue = maxTotalCharsDefault
+                    defaultValue = maxTotalCharsDefault,
+                    isDefaultFromUi = {
+                        fieldCell.component.text.toIntOrNull() == maxTotalCharsDefault
+                    },
+                    setUiToDefault = {
+                        fieldCell.component.text = maxTotalCharsDefault.toString()
+                    }
                 )
             }
 
             row(ChatificialBundle.message("settings.copyFileContent.template")) {
-                textArea()
+                val areaCell = textArea()
                     .bindText(fileTemplate)
                     .rows(10)
                     .align(AlignX.FILL)
@@ -75,9 +86,15 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
                     )
 
                 resetSettingButton(
-                    graph = graph,
+                    textComponent = areaCell.component,
                     property = fileTemplate,
-                    defaultValue = fileTemplateDefault
+                    defaultValue = fileTemplateDefault,
+                    isDefaultFromUi = {
+                        areaCell.component.text == fileTemplateDefault
+                    },
+                    setUiToDefault = {
+                        areaCell.component.text = fileTemplateDefault
+                    }
                 )
             }.resizableRow()
         }
@@ -106,20 +123,34 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
     }
 }
 
-fun <T> Row.resetSettingButton(
-    graph: PropertyGraph,
+private fun <T> Row.resetSettingButton(
+    textComponent: JTextComponent,
     property: GraphProperty<T>,
-    defaultValue: T
+    defaultValue: T,
+    isDefaultFromUi: () -> Boolean,
+    setUiToDefault: () -> Unit
 ) {
     lateinit var buttonComponent: JComponent
+
+    fun updateVisibility() {
+        val show = !isDefaultFromUi()
+        buttonComponent.isVisible = show
+        buttonComponent.isEnabled = show
+        buttonComponent.revalidate()
+        buttonComponent.repaint()
+    }
 
     val action = object : DumbAwareAction(
         ChatificialBundle.message("settings.common.reset"),
         ChatificialBundle.message("settings.common.reset.description"),
         AllIcons.Diff.Revert
     ) {
+        override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+
         override fun actionPerformed(e: AnActionEvent) {
             property.set(defaultValue)
+            setUiToDefault()
+            updateVisibility()
         }
     }
 
@@ -127,13 +158,15 @@ fun <T> Row.resetSettingButton(
         toolTipText = ChatificialBundle.message("settings.common.reset.tooltip")
     }
 
-    fun updateVisibility() {
-        buttonComponent.isVisible = property.get() != defaultValue
-    }
+    textComponent.document.addDocumentListener(object : DocumentListener {
+        override fun insertUpdate(e: DocumentEvent) = schedule()
+        override fun removeUpdate(e: DocumentEvent) = schedule()
+        override fun changedUpdate(e: DocumentEvent) = schedule()
+
+        private fun schedule() {
+            if (EventQueue.isDispatchThread()) updateVisibility() else EventQueue.invokeLater { updateVisibility() }
+        }
+    })
 
     updateVisibility()
-
-    graph.afterPropagation {
-        updateVisibility()
-    }
 }
