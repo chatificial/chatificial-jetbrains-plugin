@@ -46,7 +46,6 @@ class CopyFileContentAction : AnAction() {
 
     companion object {
         private const val NOTIFICATION_GROUP_ID = "chatificial.notification"
-
         private const val SCRATCH_FILE_NAME = "chatificial.content.md"
     }
 
@@ -79,7 +78,10 @@ class CopyFileContentAction : AnAction() {
                 }
             }
         }
-            .finishOnUiThread(ModalityState.nonModal()) { outputOrNull ->
+            .finishOnUiThread(
+                @Suppress("DEPRECATION") // 2022.3 compatibility
+                ModalityState.NON_MODAL
+            ) { outputOrNull ->
                 if (project.isDisposed) return@finishOnUiThread
 
                 if (outputOrNull == null) {
@@ -107,7 +109,10 @@ class CopyFileContentAction : AnAction() {
                     CopyPasteManager.getInstance().setContents(StringSelection(outputOrNull))
                     NotificationType.INFORMATION.notify(
                         project,
-                        ChatificialBundle.message("chatificial.copyFileContent.copiedToClipboard", outputOrNull.length)
+                        ChatificialBundle.message(
+                            "chatificial.copyFileContent.copiedToClipboard",
+                            outputOrNull.length
+                        )
                     )
                 }
             }
@@ -118,12 +123,14 @@ class CopyFileContentAction : AnAction() {
         if (project.isDisposed || !file.isValid) return
 
         val app = ApplicationManager.getApplication()
+
         app.invokeLater(
             {
                 if (project.isDisposed || !file.isValid) return@invokeLater
                 FileEditorManager.getInstance(project).openFile(file, true, true)
             },
-            ModalityState.nonModal()
+            @Suppress("DEPRECATION") // 2022.3 compatibility
+            ModalityState.NON_MODAL
         )
     }
 

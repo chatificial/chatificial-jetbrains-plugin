@@ -56,6 +56,7 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
                     .comment(ChatificialBundle.message("settings.copyFileContent.maxTotalChars.comment"))
 
                 resetSettingButton(
+                    graph = graph,
                     property = maxTotalChars,
                     defaultValue = maxTotalCharsDefault
                 )
@@ -74,6 +75,7 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
                     )
 
                 resetSettingButton(
+                    graph = graph,
                     property = fileTemplate,
                     defaultValue = fileTemplateDefault
                 )
@@ -105,6 +107,7 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
 }
 
 fun <T> Row.resetSettingButton(
+    graph: PropertyGraph,
     property: GraphProperty<T>,
     defaultValue: T
 ) {
@@ -117,7 +120,6 @@ fun <T> Row.resetSettingButton(
     ) {
         override fun actionPerformed(e: AnActionEvent) {
             property.set(defaultValue)
-            buttonComponent.isVisible = false
         }
     }
 
@@ -130,5 +132,8 @@ fun <T> Row.resetSettingButton(
     }
 
     updateVisibility()
-    property.afterChange { updateVisibility() }
+
+    graph.afterPropagation {
+        updateVisibility()
+    }
 }
