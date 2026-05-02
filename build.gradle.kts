@@ -21,7 +21,7 @@ plugins {
 }
 
 group = "io.github.chatificial"
-version = "0.1.0-eap.5"
+version = "0.1.0-eap.6"
 
 repositories {
     mavenCentral()

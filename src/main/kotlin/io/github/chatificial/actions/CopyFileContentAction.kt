@@ -27,6 +27,7 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileTypes.FileTypeManager
 import com.intellij.openapi.ide.CopyPasteManager
@@ -140,7 +141,7 @@ class CopyFileContentAction : AnAction() {
     private fun formatOneFile(project: Project, file: VirtualFile, template: String): String {
         val relPath = getRelativePathFromProjectRoot(project, file)
         val contentOrPlaceholder =
-            readFileAsUtf8(file) ?: ChatificialBundle.message("chatificial.copyFileContent.couldNotReadFileContent")
+            readFileAsText(file) ?: ChatificialBundle.message("chatificial.copyFileContent.couldNotReadFileContent")
 
         val normalizedContent =
             if (contentOrPlaceholder.endsWith('\n')) contentOrPlaceholder else "$contentOrPlaceholder\n"
@@ -190,9 +191,10 @@ class CopyFileContentAction : AnAction() {
     private fun isBinary(file: VirtualFile): Boolean =
         FileTypeManager.getInstance().getFileTypeByFile(file).isBinary
 
-    private fun readFileAsUtf8(file: VirtualFile): String? =
+    private fun readFileAsText(file: VirtualFile): String? =
         try {
-            String(file.contentsToByteArray(), Charsets.UTF_8)
+            FileDocumentManager.getInstance().getDocument(file)?.text
+                ?: String(file.contentsToByteArray(), Charsets.UTF_8)
         } catch (_: Throwable) {
             null
         }
