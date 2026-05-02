@@ -21,7 +21,7 @@ plugins {
 }
 
 group = "io.github.chatificial"
-version = "0.1.0-eap.4"
+version = "0.1.0-eap.5"
 
 repositories {
     mavenCentral()
@@ -40,7 +40,7 @@ dependencies {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "223"
+            sinceBuild = "241"
         }
 
         changeNotes = """
