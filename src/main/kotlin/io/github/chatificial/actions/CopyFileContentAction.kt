@@ -16,6 +16,7 @@
 
 package io.github.chatificial.actions
 
+import com.intellij.copyright.CopyrightManager
 import com.intellij.ide.scratch.ScratchFileService
 import com.intellij.ide.scratch.ScratchRootType
 import com.intellij.notification.NotificationGroupManager
@@ -37,7 +38,9 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiManager
 import com.intellij.util.concurrency.AppExecutorUtil
+import com.maddyhome.idea.copyright.CopyrightProfile
 import io.github.chatificial.ChatificialBundle
 import io.github.chatificial.settings.ChatificialSettings
 import io.github.chatificial.template.TemplatePlaceholders
@@ -64,6 +67,7 @@ class CopyFileContentAction : AnAction() {
 
         val settingsState = ChatificialSettings.getInstance().state
         val maxTotalChars = settingsState.maxTotalChars.coerceAtLeast(1)
+        val ignoreFileLicenses = settingsState.ignoreFileLicenses
         val template = settingsState.fileTemplate
 
         ReadAction.nonBlocking<String?> {
@@ -74,7 +78,7 @@ class CopyFileContentAction : AnAction() {
 
             buildString {
                 files.forEachIndexed { idx, file ->
-                    append(formatOneFile(project, file, template))
+                    append(formatOneFile(project, file, template, ignoreFileLicenses))
                     if (idx != files.lastIndex) append("\n\n")
                 }
             }
@@ -138,13 +142,20 @@ class CopyFileContentAction : AnAction() {
             .notify(project)
     }
 
-    private fun formatOneFile(project: Project, file: VirtualFile, template: String): String {
+    private fun formatOneFile(
+        project: Project,
+        file: VirtualFile,
+        template: String,
+        ignoreFileLicenses: Boolean
+    ): String {
         val relPath = getRelativePathFromProjectRoot(project, file)
         val contentOrPlaceholder =
             readFileAsText(file) ?: ChatificialBundle.message("chatificial.copyFileContent.couldNotReadFileContent")
+        val content =
+            if (ignoreFileLicenses) contentOrPlaceholder.withoutLeadingLicense(project, file) else contentOrPlaceholder
 
         val normalizedContent =
-            if (contentOrPlaceholder.endsWith('\n')) contentOrPlaceholder else "$contentOrPlaceholder\n"
+            if (content.endsWith('\n')) content else "$content\n"
 
         return template
             .replace(TemplatePlaceholders.PATH, relPath)
@@ -235,4 +246,104 @@ class CopyFileContentAction : AnAction() {
         val single = CommonDataKeys.VIRTUAL_FILE.getData(e.dataContext)
         return if (single != null) listOf(single) else emptyList()
     }
+}
+
+private fun String.withoutLeadingLicense(project: Project, file: VirtualFile): String {
+    val normalized = replace("\r\n", "\n").replace('\r', '\n')
+    val candidates = listOfNotNull(
+        normalized.leadingDelimitedComment("/*", "*/"),
+        normalized.leadingDelimitedComment("<!--", "-->"),
+        normalized.leadingLineComment("//"),
+        normalized.leadingLineComment("#")
+    )
+    val copyrightProfile = file.copyrightProfile(project)
+
+    val licenseEnd = candidates
+        .filter {
+            val header = normalized.substring(0, it)
+            header.matchesCopyrightProfile(copyrightProfile) || header.looksLikeLicenseHeader()
+        }
+        .minOrNull()
+        ?: return this
+
+    return normalized.substring(licenseEnd).trimStart('\n')
+}
+
+private fun VirtualFile.copyrightProfile(project: Project): CopyrightProfile? {
+    val psiFile = PsiManager.getInstance(project).findFile(this) ?: return null
+    return CopyrightManager.getInstance(project).getCopyrightOptions(psiFile)
+}
+
+private fun String.leadingDelimitedComment(start: String, end: String): Int? {
+    val contentStart = indexOfFirst { !it.isWhitespace() }.takeIf { it >= 0 } ?: return null
+    if (!startsWith(start, contentStart)) return null
+
+    val contentEnd = indexOf(end, contentStart + start.length)
+    if (contentEnd < 0) return null
+
+    return skipBlankLines(contentEnd + end.length)
+}
+
+private fun String.leadingLineComment(prefix: String): Int? {
+    val contentStart = indexOfFirst { !it.isWhitespace() }.takeIf { it >= 0 } ?: return null
+    var offset = contentStart
+    var endOfComment = contentStart
+    var hasCommentLine = false
+
+    while (offset < length) {
+        val lineEnd = indexOf('\n', offset).takeIf { it >= 0 } ?: length
+        val line = substring(offset, lineEnd)
+        val trimmed = line.trimStart()
+
+        if (trimmed.isBlank() && hasCommentLine) {
+            endOfComment = lineEnd
+            offset = (lineEnd + 1).coerceAtMost(length)
+            continue
+        }
+
+        if (prefix == "#" && trimmed.startsWith("#!")) break
+        if (!trimmed.startsWith(prefix)) break
+
+        hasCommentLine = true
+        endOfComment = lineEnd
+        offset = (lineEnd + 1).coerceAtMost(length)
+    }
+
+    return if (hasCommentLine) skipBlankLines(endOfComment) else null
+}
+
+private fun String.skipBlankLines(offset: Int): Int {
+    var current = offset
+    while (current < length) {
+        val next = if (this[current] == '\n') current + 1 else current
+        val lineEnd = indexOf('\n', next).takeIf { it >= 0 } ?: length
+        if (substring(next, lineEnd).isNotBlank()) return next
+        current = if (lineEnd < length) lineEnd + 1 else length
+    }
+    return current
+}
+
+private fun String.looksLikeLicenseHeader(): Boolean {
+    val lower = lowercase()
+    return "copyright" in lower ||
+            "licensed under" in lower ||
+            "license" in lower ||
+            "spdx-license-identifier" in lower
+}
+
+private fun String.matchesCopyrightProfile(profile: CopyrightProfile?): Boolean {
+    if (profile == null) return false
+
+    val keyword = profile.keyword.orEmpty().trim()
+    if (keyword.isNotEmpty() && contains(keyword, ignoreCase = true)) return true
+
+    val allowReplaceRegexp = profile.allowReplaceRegexp.orEmpty().trim()
+    if (allowReplaceRegexp.isBlank()) return false
+
+    return runCatching {
+        Regex(
+            allowReplaceRegexp,
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        ).containsMatchIn(this)
+    }.getOrDefault(false)
 }

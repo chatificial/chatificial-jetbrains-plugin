@@ -21,7 +21,7 @@ plugins {
 }
 
 group = "io.github.chatificial"
-version = "0.1.0-eap.6"
+version = "0.1.0-eap.7"
 
 repositories {
     mavenCentral()
@@ -33,6 +33,7 @@ repositories {
 dependencies {
     intellijPlatform {
         intellijIdea("2025.2.4")
+        bundledPlugin("com.intellij.copyright")
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 }

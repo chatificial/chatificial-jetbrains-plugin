@@ -26,6 +26,7 @@
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.copyright</depends>
 
     <resource-bundle>messages.ChatificialBundle</resource-bundle>
 

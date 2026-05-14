@@ -27,6 +27,7 @@ import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.Row
 import com.intellij.ui.dsl.builder.actionButton
 import com.intellij.ui.dsl.builder.bindIntText
+import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.rows
@@ -47,9 +48,11 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
     private val graph = PropertyGraph()
 
     private val maxTotalCharsDefault = 20_000
+    private val ignoreFileLicensesDefault = false
     private val fileTemplateDefault = ChatificialSettings.DEFAULT_TEMPLATE
 
     private val maxTotalChars = graph.property(maxTotalCharsDefault)
+    private val ignoreFileLicenses = graph.property(ignoreFileLicensesDefault)
     private val fileTemplate = graph.property(fileTemplateDefault)
 
     override fun createPanel() = panel {
@@ -71,6 +74,12 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
                         fieldCell.component.text = maxTotalCharsDefault.toString()
                     }
                 )
+            }
+
+            row {
+                checkBox(ChatificialBundle.message("settings.copyFileContent.ignoreFileLicenses"))
+                    .bindSelected(ignoreFileLicenses)
+                    .comment(ChatificialBundle.message("settings.copyFileContent.ignoreFileLicenses.comment"))
             }
 
             row(ChatificialBundle.message("settings.copyFileContent.template")) {
@@ -102,12 +111,15 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
 
     override fun isModified(): Boolean {
         val s = settings.state
-        return maxTotalChars.get() != s.maxTotalChars || fileTemplate.get() != s.fileTemplate
+        return maxTotalChars.get() != s.maxTotalChars ||
+                ignoreFileLicenses.get() != s.ignoreFileLicenses ||
+                fileTemplate.get() != s.fileTemplate
     }
 
     override fun reset() {
         val s = settings.state
         maxTotalChars.set(s.maxTotalChars)
+        ignoreFileLicenses.set(s.ignoreFileLicenses)
         fileTemplate.set(s.fileTemplate)
     }
 
@@ -117,6 +129,7 @@ class ChatificialSettingsConfigurable : BoundConfigurable(
         settings.setState(
             settings.state.copy(
                 maxTotalChars = maxTotalChars.get(),
+                ignoreFileLicenses = ignoreFileLicenses.get(),
                 fileTemplate = fileTemplate.get()
             )
         )

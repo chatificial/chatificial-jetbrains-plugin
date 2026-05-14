@@ -32,6 +32,7 @@ class ChatificialSettings : PersistentStateComponent<ChatificialSettings.State> 
 
     data class State(
         var maxTotalChars: Int = 20_000,
+        var ignoreFileLicenses: Boolean = false,
         var fileTemplate: String = DEFAULT_TEMPLATE
     )
 
