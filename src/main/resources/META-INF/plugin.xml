@@ -54,6 +54,14 @@
                     id="chatificial.copyFileContent"
                     class="io.github.chatificial.actions.CopyFileContentAction"
             />
+            <action
+                    id="chatificial.copyFileTree"
+                    class="io.github.chatificial.actions.CopyFileTreeAction"
+            />
+            <action
+                    id="chatificial.copyDirectoryTree"
+                    class="io.github.chatificial.actions.CopyDirectoryTreeAction"
+            />
         </group>
     </actions>
 </idea-plugin>
